@@ -6,51 +6,45 @@ import scala.io.Source
 
 import sbt._
 
-trait Manifest {
-  protected def stripComments(line: String) = "#.*$".r.replaceAllIn(line, "").trim
-  protected def isSkippable(line: String): Boolean = stripComments(line) == ""
-  protected def isUrl(line: String): Boolean = stripComments(line).matches("^https?:.*")
+class Manifest(val file: File, downloadDir: File, charset: Charset) {
+  lazy val sources: List[ManifestObject] = {
+    IO.readLines(file, charset)
+      .map(line => "#.*$".r.replaceAllIn(line, "").trim)
+      .filterNot(_.isEmpty)
+      .map(line => {
+        if (line.matches("^https?:"))
+          ManifestUrl(downloadDir, line)
+        else
+          ManifestFile(sbt.file(file.getParent), line)
+      })
+  }
 
-  protected def parse(lines: List[String]): List[ManifestObject] =
-    lines
-      .map(stripComments _)
-      .filter(item => !isSkippable(item))
-      .map(line => if (isUrl(line)) ManifestUrl(line) else ManifestFile(line))
-}
-
-object Manifest extends Manifest {
-  /**
-    * Get the files for a manifest, downloading the urls to a temp dir
-    */
-  def files(manifest: File, downloadDir: File, charset: Charset): List[File] = {
-    val manifestDir: File = file(manifest.getParent)
-
-    parse(IO.readLines(manifest, charset)).map(mo => mo match {
-      case f: ManifestFile => f.file(manifestDir)
-      case u: ManifestUrl =>  u.file(downloadDir)
-    })
+  def newerThan(other : java.io.File): Boolean = {
+    (file newerThan other) || (other.lastModified < sources.foldLeft(0L)((i, mo) => i max mo.file.lastModified))
   }
 }
 
-sealed abstract class ManifestObject {
-  def file(parent: File): File
-  /*def path(parent: File): File =
-    filename.split("""[/\\]""").foldLeft(parent)(_ / _)*/
+sealed abstract class ManifestObject(parent: File) {
+  def file(): File
 }
 
-case class ManifestFile(filename: String) extends ManifestObject {
-  def file(parent: File): File = parent / filename
+case class ManifestFile(parent: File, filename: String) extends ManifestObject(parent) {
+  def file(): File = parent / filename
 }
 
-case class ManifestUrl(url: String) extends ManifestObject {
+case class ManifestUrl(parent: File, url: String) extends ManifestObject(parent) {
   lazy val filename: String = """[^A-Za-z0-9.]""".r.replaceAllIn(url, "_")
 
-  def content: String = Source.fromInputStream(new URL(url).openStream).mkString
+  protected def content: String = Source.fromInputStream(new URL(url).openStream).mkString
 
-  def file(parent: File): File = {
-    val out = parent / filename
-    IO.createDirectory(parent)
-    IO.write(out, content)
-    out
+  def file(): File = {
+    val f = parent / filename
+
+    if (!f.exists()) {
+      IO.createDirectory(parent)
+      IO.write(f, content)
+    }
+
+    f
   }
 }

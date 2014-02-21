@@ -3,7 +3,6 @@ package sbtclosure
 import java.nio.charset.Charset
 
 import sbt._
-import sbt.Project.Initialize
 
 import com.google.javascript.jscomp.CompilerOptions
 
@@ -12,15 +11,15 @@ object SbtClosurePlugin extends Plugin {
   import ClosureKeys._
 
   object ClosureKeys {
-    lazy val closure = TaskKey[Seq[File]]("closure", "Compiles .jsm javascript manifest files")
-    lazy val charset = SettingKey[Charset]("charset", "Sets the character encoding used in file IO. Defaults to utf-8")
-    lazy val downloadDirectory = SettingKey[File]("download-dir", "Directory to download ManifestUrls to")
-    lazy val prettyPrint = SettingKey[Boolean]("pretty-print", "Whether to pretty print JavaScript (default false)")
-    lazy val closureOptions = SettingKey[CompilerOptions]("options", "Compiler options")
-    lazy val suffix = SettingKey[String]("suffix", "String to append to output filename (before file extension)")
+    lazy val closure            = TaskKey[Seq[File]]("closure", "Compiles .jsm javascript manifest files")
+    lazy val charset            = SettingKey[Charset]("charset", "Sets the character encoding used in file IO. Defaults to utf-8")
+    lazy val downloadDirectory  = SettingKey[File]("download-dir", "Directory to download ManifestUrls to")
+    lazy val prettyPrint        = SettingKey[Boolean]("pretty-print", "Whether to pretty print JavaScript (default false)")
+    lazy val closureOptions     = SettingKey[CompilerOptions]("options", "Compiler options")
+    lazy val suffix             = SettingKey[String]("suffix", "String to append to output filename (before file extension)")
   }
 
-  def closureOptionsSetting: Initialize[CompilerOptions] =
+  def closureOptionsSetting: Def.Initialize[CompilerOptions] =
     (streams, prettyPrint in closure) apply {
       (out, prettyPrint) =>
         val options = new CompilerOptions
@@ -71,15 +70,15 @@ object SbtClosurePlugin extends Plugin {
       (out, sources, target, include, exclude, charset, downloadDir, options, suffix) => {
         // compile changed sources
         (for {
-          manifest <- sources.descendantsExcept(include, exclude).get
+          manifest <- sources.descendantsExcept(include, exclude).get.map(new Manifest(_, downloadDir, charset))
           outFile <- computeOutFile(sources, manifest, target, suffix)
-          if (manifest newerThan outFile)
+          if manifest newerThan outFile
         } yield { (manifest, outFile) }) match {
           case Nil =>
             out.log.debug("No JavaScript manifest files to compile")
           case xs =>
             out.log.info("Compiling %d jsm files to %s" format(xs.size, target))
-            xs map doCompile(downloadDir, charset, out.log, options)
+            xs map doCompile(out.log, options)
             out.log.debug("Compiled %s jsm files" format xs.size)
         }
         compiled(target)
@@ -92,18 +91,16 @@ object SbtClosurePlugin extends Plugin {
          sourceDir.descendantsExcept(incl, excl).get
     }
 
-  private def doCompile(downloadDir: File, charset: Charset, log: Logger, options: CompilerOptions)(pair: (File, File)) = {
+  private def doCompile(log: Logger, options: CompilerOptions)(pair: (Manifest, File)) = {
     val (jsm, js) = pair
     log.debug("Compiling %s" format jsm)
-    val srcFiles = Manifest.files(jsm, downloadDir, charset)
-    val compiler = new Compiler(options)
-    compiler.compile(srcFiles, Nil, js, log)
+    Compiler(options).compile(jsm, js, log)
   }
 
   private def compiled(under: File) = (under ** "*.js").get
 
-  private def computeOutFile(sources: File, manifest: File, targetDir: File, suffix: String): Option[File] = {
-    val outFile = IO.relativize(sources, manifest).get.replaceAll("""[.]jsm(anifest)?$""", "") + {
+  private def computeOutFile(sources: File, manifest: Manifest, targetDir: File, suffix: String): Option[File] = {
+    val outFile = IO.relativize(sources, manifest.file).get.replaceAll("""[.]jsm(anifest)?$""", "") + {
       if (suffix.length > 0) "-%s.js".format(suffix)
       else ".js"
     }

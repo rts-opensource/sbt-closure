@@ -4,14 +4,37 @@ import com.google.javascript.jscomp.{Compiler => ClosureCompiler, CompilerOption
 
 import sbt._
 
+object Compiler {
+  def apply(options: CompilerOptions): Compiler = {
+    new Compiler(options)
+  }
+}
+
 class Compiler(options: CompilerOptions) {
 
-  def compile(sources: List[File], externs: List[File], target: File, log: Logger): Unit = {
-    val compiler = new ClosureCompiler
+  lazy val compiler = new ClosureCompiler
 
+  /**
+   * Concatenate source files to target and generate a compiled .min.js file.
+   *
+   * @param manifest Manifest file
+   * @param target Destination for concatenated source files
+   * @param log The logger
+   */
+  def compile(manifest: Manifest, target: File, log: Logger): Unit = {
+
+    // Create file parent directory.
+    IO.createDirectory(file(target.getParent))
+
+    // Concatenate file list into target.
+    IO.write(target, (manifest.sources.map(_.file).foldLeft(Array[Byte]()))((content, source) => {
+      content ++ IO.readBytes(source)
+    }))
+
+    // Compile concatenated JS (we do not handle externs)
     val result = compiler.compile(
-      externs.map(JSSourceFile.fromFile _).toArray,
-      sources.map(JSSourceFile.fromFile _).toArray,
+      Array[JSSourceFile](),
+      Array[JSSourceFile](JSSourceFile.fromFile(target)),
       options
     )
 
@@ -26,8 +49,11 @@ class Compiler(options: CompilerOptions) {
         warnings.foreach { (err: JSError) => log.warn(err.toString) }
       }
 
-      IO.createDirectory(file(target.getParent))
-      IO.write(target, compiler.toSource)
+      // Write compiled output to minified JS file.
+      IO.write(
+        new File(target.getCanonicalPath.replaceAll("""\.js$""", ".min.js")),
+        compiler.toSource
+      )
     }
   }
 }
