@@ -1,4 +1,4 @@
-package sbtclosure
+package sbtjsmanifest
 
 import java.nio.charset.Charset
 
@@ -7,15 +7,19 @@ import scala.io.Source
 import sbt._
 
 class Manifest(val file: File, downloadDir: File, charset: Charset) {
+  lazy val urlReg = """^https?:""".r
+
   lazy val sources: List[ManifestObject] = {
     IO.readLines(file, charset)
       .map(line => "#.*$".r.replaceAllIn(line, "").trim)
       .filterNot(_.isEmpty)
       .map(line => {
-        if (line.matches("^https?:"))
+        if ((urlReg findFirstIn line).nonEmpty) {
           ManifestUrl(downloadDir, line)
-        else
+        }
+        else {
           ManifestFile(sbt.file(file.getParent), line)
+        }
       })
   }
 

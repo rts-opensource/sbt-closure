@@ -1,4 +1,4 @@
-package sbtclosure
+package sbtjsmanifest
 
 import com.google.javascript.jscomp.{Compiler => ClosureCompiler, CompilerOptions, JSError, JSSourceFile}
 
@@ -50,10 +50,8 @@ class Compiler(options: CompilerOptions) {
       }
 
       // Write compiled output to minified JS file.
-      IO.write(
-        new File(target.getCanonicalPath.replaceAll("""\.js$""", ".min.js")),
-        compiler.toSource
-      )
+      val compiledFile = new File(target.getCanonicalPath.replaceAll("""\.js$""", ".min.js"))
+      IO.write(compiledFile, compiler.toSource)
     }
   }
 }

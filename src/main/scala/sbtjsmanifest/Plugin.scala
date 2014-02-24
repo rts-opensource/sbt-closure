@@ -1,4 +1,4 @@
-package sbtclosure
+package sbtjsmanifest
 
 import java.nio.charset.Charset
 
@@ -6,11 +6,11 @@ import sbt._
 
 import com.google.javascript.jscomp.CompilerOptions
 
-object SbtClosurePlugin extends Plugin {
+object SbtJsManifestPlugin extends Plugin {
   import sbt.Keys._
-  import ClosureKeys._
+  import JsManifestKeys._
 
-  object ClosureKeys {
+  object JsManifestKeys {
     lazy val closure            = TaskKey[Seq[File]]("closure", "Compiles .jsm javascript manifest files")
     lazy val charset            = SettingKey[Charset]("charset", "Sets the character encoding used in file IO. Defaults to utf-8")
     lazy val downloadDirectory  = SettingKey[File]("download-dir", "Directory to download ManifestUrls to")

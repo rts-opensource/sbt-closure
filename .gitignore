@@ -1,5 +1,17 @@
+# Project related.
 project/target/
 target/
 
-# sublime-text
-*.sublime-*
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Intellij
+.idea/
+*.iml
+*.iws
+
+# Mac
+.DS_Store
+

@@ -5,4 +5,4 @@ libs/foo.js
 ../bar.js
 
 # url
-https://raw.github.com/eltimn/sbt-closure/master/src/main/resources/test-script.js
+https://raw.github.com/jashkenas/underscore/1.6.0/underscore-min.js

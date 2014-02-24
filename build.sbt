@@ -1,50 +1,33 @@
+import bintray.Keys._
+
 sbtPlugin := true
 
-organization := "org.scala-sbt"
+name := "sbt-jsmanifest"
 
-name := "sbt-closure"
+organization := "ch.srg"
 
-version <<= sbtVersion(v =>
-  if(v.startsWith("0.12")) "0.1.3"
-  else if(v.startsWith("0.13")) "0.1.4"
-  else error("unsupported sbt version %s" format v)
-)
+version := "0.0.1-SNAPSHOT"
+
+publishMavenStyle := false
+
+homepage := Some(url("https://github.com/eltimn/sbt-closure"))
+
+licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.html"))
+
+bintrayPublishSettings
+
+repository in bintray := "sbt-plugins"
+
+bintrayOrganization in bintray := None
 
 libraryDependencies += "com.google.javascript" % "closure-compiler" % "r1741"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.1" % "test"
 
-seq(scriptedSettings:_*)
+scriptedSettings
 
-seq(lsSettings:_*)
+scriptedLaunchOpts <+= version { "-Dplugin.version=" + _ }
 
-(LsKeys.tags in LsKeys.lsync) := Seq("sbt", "closure")
-
-(description in LsKeys.lsync) :=
-  "Sbt plugin for compiling JavaScript manifest sources using Google Closure Compiler"
-
-homepage := Some(url("https://github.com/eltimn/sbt-closure"))
-
-publishTo := Some(Resolver.url("publishTo", new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns))
-
-publishMavenStyle := false
-
-publishArtifact in Test := false
-
-licenses in GlobalScope += "Apache License 2.0" -> url("https://github.com/eltimn/sbt-closure/raw/master/LICENSE")
-
-pomExtra := (
-  <scm>
-    <url>git@github.com:eltimn/sbt-closure.git</url>
-    <connection>scm:git:git@github.com:eltimn/sbt-closure.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <id>eltimn</id>
-      <name>Tim Nelson</name>
-      <url>http://eltimn.com/</url>
-    </developer>
-  </developers>
-)
+scriptedBufferLog := false
 
 scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8")
