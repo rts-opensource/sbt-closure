@@ -11,62 +11,62 @@ object SbtJsManifestPlugin extends Plugin {
   import JsManifestKeys._
 
   object JsManifestKeys {
-    lazy val closure            = TaskKey[Seq[File]]("closure", "Compiles .jsm javascript manifest files")
+    lazy val jsManifest         = TaskKey[Seq[File]]("jsManifest", "Compiles .jsm javascript manifest files")
     lazy val charset            = SettingKey[Charset]("charset", "Sets the character encoding used in file IO. Defaults to utf-8")
     lazy val downloadDirectory  = SettingKey[File]("download-dir", "Directory to download ManifestUrls to")
     lazy val prettyPrint        = SettingKey[Boolean]("pretty-print", "Whether to pretty print JavaScript (default false)")
-    lazy val closureOptions     = SettingKey[CompilerOptions]("options", "Compiler options")
+    lazy val jsManifestOptions  = SettingKey[CompilerOptions]("options", "Compiler options")
     lazy val suffix             = SettingKey[String]("suffix", "String to append to output filename (before file extension)")
   }
 
-  def closureOptionsSetting: Def.Initialize[CompilerOptions] =
-    (streams, prettyPrint in closure) apply {
+  def jsManifestOptionsSetting: Def.Initialize[CompilerOptions] =
+    (streams, prettyPrint in jsManifest) apply {
       (out, prettyPrint) =>
         val options = new CompilerOptions
         options.prettyPrint = prettyPrint
         options
     }
 
-  def closureSettings: Seq[Setting[_]] =
-    closureSettingsIn(Compile) ++ closureSettingsIn(Test)
+  def jsManifestSettings: Seq[Setting[_]] =
+    jsManifestSettingsIn(Compile) ++ jsManifestSettingsIn(Test)
 
-  def closureSettingsIn(conf: Configuration): Seq[Setting[_]] =
-    inConfig(conf)(closureSettings0 ++ Seq(
-      sourceDirectory in closure <<= (sourceDirectory in conf) { _ / "javascript" },
-      resourceManaged in closure <<= (resourceManaged in conf) { _ / "js" },
-      downloadDirectory in closure <<= (target in conf) { _ / "closure-downloads" },
-      cleanFiles in closure <<= (resourceManaged in closure, downloadDirectory in closure)(_ :: _ :: Nil),
-      watchSources <<= (unmanagedSources in closure)
+  def jsManifestSettingsIn(conf: Configuration): Seq[Setting[_]] =
+    inConfig(conf)(jsManifestSettings0 ++ Seq(
+      sourceDirectory in jsManifest <<= (sourceDirectory in conf) { _ / "javascript" },
+      resourceManaged in jsManifest <<= (resourceManaged in conf) { _ / "js" },
+      downloadDirectory in jsManifest <<= (target in conf) { _ / "jsManifest-downloads" },
+      cleanFiles in jsManifest <<= (resourceManaged in jsManifest, downloadDirectory in jsManifest)(_ :: _ :: Nil),
+      watchSources <<= (unmanagedSources in jsManifest)
     )) ++ Seq(
-      cleanFiles <++= (cleanFiles in closure in conf),
-      watchSources <++= (watchSources in closure in conf),
-      resourceGenerators in conf <+= closure in conf,
-      compile in conf <<= (compile in conf).dependsOn(closure in conf)
+      cleanFiles <++= (cleanFiles in jsManifest in conf),
+      watchSources <++= (watchSources in jsManifest in conf),
+      resourceGenerators in conf <+= jsManifest in conf,
+      compile in conf <<= (compile in conf).dependsOn(jsManifest in conf)
     )
 
-  def closureSettings0: Seq[Setting[_]] = Seq(
-    charset in closure := Charset.forName("utf-8"),
+  def jsManifestSettings0: Seq[Setting[_]] = Seq(
+    charset in jsManifest := Charset.forName("utf-8"),
     prettyPrint := false,
-    closureOptions <<= closureOptionsSetting,
-    includeFilter in closure := "*.jsm",
-    excludeFilter in closure := (".*" - ".") || HiddenFileFilter,
-    suffix in closure := "",
-    unmanagedSources in closure <<= closureSourcesTask,
-    clean in closure <<= closureCleanTask,
-    closure <<= closureCompilerTask
+    jsManifestOptions <<= jsManifestOptionsSetting,
+    includeFilter in jsManifest := "*.jsm",
+    excludeFilter in jsManifest := (".*" - ".") || HiddenFileFilter,
+    suffix in jsManifest := "",
+    unmanagedSources in jsManifest <<= jsManifestSourcesTask,
+    clean in jsManifest <<= jsManifestCleanTask,
+    jsManifest <<= jsManifestCompilerTask
   )
 
-  private def closureCleanTask =
-    (streams, resourceManaged in closure) map {
+  private def jsManifestCleanTask =
+    (streams, resourceManaged in jsManifest) map {
       (out, target) =>
         out.log.info("Cleaning generated JavaScript under " + target)
         IO.delete(target)
     }
 
-  private def closureCompilerTask =
-    (streams, sourceDirectory in closure, resourceManaged in closure,
-     includeFilter in closure, excludeFilter in closure, charset in closure,
-     downloadDirectory in closure, closureOptions in closure, suffix in closure) map {
+  private def jsManifestCompilerTask =
+    (streams, sourceDirectory in jsManifest, resourceManaged in jsManifest,
+     includeFilter in jsManifest, excludeFilter in jsManifest, charset in jsManifest,
+     downloadDirectory in jsManifest, jsManifestOptions in jsManifest, suffix in jsManifest) map {
       (out, sources, target, include, exclude, charset, downloadDir, options, suffix) => {
         // compile changed sources
         (for {
@@ -85,8 +85,8 @@ object SbtJsManifestPlugin extends Plugin {
       }
     }
 
-  private def closureSourcesTask =
-    (sourceDirectory in closure, includeFilter in closure, excludeFilter in closure) map {
+  private def jsManifestSourcesTask =
+    (sourceDirectory in jsManifest, includeFilter in jsManifest, excludeFilter in jsManifest) map {
       (sourceDir, incl, excl) =>
          sourceDir.descendantsExcept(incl, excl).get
     }

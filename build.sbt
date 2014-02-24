@@ -6,19 +6,19 @@ name := "sbt-jsmanifest"
 
 organization := "ch.srg"
 
-version := "0.0.1-SNAPSHOT"
+version := "0.0.1-dev"
 
 publishMavenStyle := false
 
-homepage := Some(url("https://github.com/eltimn/sbt-closure"))
+homepage := Some(url("https://github.com/rts-opensource"))
 
-licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.html"))
+licenses += ("Apache-2.0", url("https://raw.github.com/rts-opensource/sbt-jsmanifest/master/LICENSE"))
 
 bintrayPublishSettings
 
 repository in bintray := "sbt-plugins"
 
-bintrayOrganization in bintray := None
+bintrayOrganization in bintray := Some("rts")
 
 libraryDependencies += "com.google.javascript" % "closure-compiler" % "r1741"
 

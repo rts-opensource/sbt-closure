@@ -1,4 +1,4 @@
-seq(closureSettings:_*)
+seq(jsManifestSettings:_*)
 
 TaskKey[Unit]("checkCombined") <<= (baseDirectory, resourceManaged) map { (baseDirectory, resourceManaged) =>
   val fixture = sbt.IO.read(baseDirectory / "fixtures" / "script.js")
