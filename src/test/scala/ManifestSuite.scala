@@ -4,8 +4,8 @@ import org.scalatest._
 import sbt._
 import java.io.File
 
-class ManifestSuite extends FunSuite with Manifest {
-
+class ManifestSuite extends FunSuite {
+/*
   test("stripComments") {
     expectResult(""){ stripComments("#this and that") }
     expectResult(""){ stripComments("  #this and that") }
@@ -45,13 +45,6 @@ class ManifestSuite extends FunSuite with Manifest {
     expectResult("http___untyped.com_"){ ManifestUrl("http://untyped.com/").filename }
     expectResult("http___code.jquery.com_jquery_1.5.1.js"){
       ManifestUrl("http://code.jquery.com/jquery-1.5.1.js").filename
-    }
-  }
-
-  /*
-  test("ManifestFile path where filename contains forward slashes"){
-    expectResult(file("foo/bar/baz.js")){
-      ManifestFile("bar/baz.js").path(file("foo"))
     }
   }
   */

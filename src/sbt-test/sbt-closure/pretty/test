@@ -1,4 +1,0 @@
-# should generate js
-> compile
-$ exists target/scala-2.10/resource_managed/main/js/script.js
-> check
