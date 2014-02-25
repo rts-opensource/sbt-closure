@@ -6,7 +6,7 @@ name := "sbt-jsmanifest"
 
 organization := "ch.srg"
 
-version := "0.0.1-dev"
+version := "0.1.0"
 
 publishMavenStyle := false
 
