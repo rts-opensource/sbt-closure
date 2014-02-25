@@ -1,31 +1,36 @@
-# sbt-closure
+# sbt-jsmanifest
 
 [Simple Build Tool](http://www.scala-sbt.org/ "simple build tool") plugin for compiling JavaScript files from multiple sources using Google's Closure Compiler.
 
 ## Settings
 
-
 ## Installation
 
 If you have not already added the sbt community plugin resolver to your plugin definition file, add this
+Add the following to your sbt `project/plugins.sbt` file:
 
-    resolvers += Resolver.url("sbt-plugin-releases",
-      new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(
+```scala
+resolvers += Resolver.url(
+  "bintray-rts-sbt-plugins",
+    url("http://dl.bintray.com/content/rts/sbt-plugins"))(
         Resolver.ivyStylePatterns)
 
-Then add this (see [ls.implicit.ly](http://ls.implicit.ly/eltimn/sbt-closure#sbt-closure) for current version)
-
-    addSbtPlugin("org.scala-sbt" % "sbt-closure" % "0.1.0")
+addSbtPlugin("ch.srg" % "sbt-jsmanifest" % "0.0.1")
+```
 
 Then in your build definition, add
 
-    seq(closureSettings:_*)
+```scala
+seq(jsManifestSettings:_*)
+```
 
-This will append `sbt-closure`'s settings for the `Compile` and `Test` configurations.
+This will append `sbt-jsmanifest`'s settings for the `Compile` and `Test` configurations.
 
-To add them to other configurations, use the provided `closureSettingsIn(config)` method.
+To add them to other configurations, use the provided `jsManifestSettingsIn(config)` method.
 
-    seq(closureSettingsIn(SomeOtherConfig):_*)
+```scala
+seq(jsManifestSettingsIn(SomeOtherConfig):_*)
+```
 
 ## Usage
 
@@ -44,14 +49,15 @@ should contain ordered lists of JavaScript source locations. For example:
 
     # Blank lines and bash-style comments are ignored.
 
-The plugin compiles this in two phases: first, it downloads and caches any
-remote scripts. Second, it feeds all of the specified scripts into the Closure
-compiler. The compiler outputs a file with the same name but with a `.js` extension under
-`path/to/resource_managed/main/js`
+The plugin compiles this in three phases:
+1. It downloads and caches any remote script
+2. It generates a combined javascript file and outputs it to `path/to/resource_managed/main/js` (same filename but with `.js` extension)
+3. Then it passes the combined javascript file to the Closure compiler and generates the file with `.min.js` extension
 
 For example, if your manifest
-file is at `src/main/javascript/foo.jsm` in the source tree, the final
-path would be `resource_managed/main/js/foo.js` in the target tree.
+file is at `src/main/javascript/foo.jsm` in the source tree, the combined file would
+be `resource_managed/main/js/foo.js` and the compiled one `resource_managed/main/js/foo.min.js`
+in the source tree.
 
 If, on compilation, the plugin finds remote scripts already cached on your
 filesystem, it won't try to download them again. Running `sbt clean` will
@@ -71,13 +77,31 @@ If you're using [xsbt-web-plugin](https://github.com/JamesEarlDouglas/xsbt-web-p
 
 ### Changing the directory that is scanned, use:
 
-    (sourceDirectory in (Compile, ClosureKeys.closure)) <<= (sourceDirectory in Compile)(_ / "path" / "to" / "jsmfiles")
+    (sourceDirectory in (Compile, JsManifestKeys.closure)) <<= (sourceDirectory in Compile)(_ / "path" / "to" / "jsmfiles")
 
 ### Changing target js destination:
 
 To change the default location of compiled js files, add the following to your build definition
 
-    (resourceManaged in (Compile, ClosureKeys.closure)) <<= (resourceManaged in Compile)(_ / "your_preference" / "js")
+    (resourceManaged in (Compile, JsManifestKeys.closure)) <<= (resourceManaged in Compile)(_ / "your_preference" / "js")
+
+### Example sbt configuration for [Play Framework](http://www.playframework.com/)
+
+```scala
+// Enables sbt-jsmanifest.
+jsManifestSettings
+
+// Custom settings.
+Seq(
+  // Indicate the plugin to scan the Play javascript assets directory:
+  (sourceDirectory in (Compile, JsManifestKeys.jsManifest)) <<= (sourceDirectory in Compile)(_ / "assets" / "javascripts"),
+  // Put output files in the same place as Play does:
+  (resourceManaged in (Compile, JsManifestKeys.jsManifest)) <<= (resourceManaged in Compile)(_ / "public" / "javascripts"),
+  // Make sure the plugins are called by the compile command and
+  // the continuous recompilation in the run command:
+  resourceGenerators in Compile <+= (JsManifestKeys.jsManifest in Compile)
+)
+```
 
 ## File versioning
 
@@ -85,7 +109,7 @@ The plugin has a setting for a file suffix that is appended to the output file n
 This allows you to update the version whenever you make changes to your Javascript files. Useful when you are
 caching your js files in production. To use, add the following to your build.sbt:
 
-    (ClosureKeys.suffix in (Compile, ClosureKeys.closure)) := "4"
+    (JsManifestKeys.suffix in (Compile, JsManifestKeys.closure)) := "4"
 
 Then if you have manifest file `src/main/javascript/script.jsm` it will be output as
 `resource_managed/src/main/js/script-4.js`
@@ -98,7 +122,7 @@ to your project, then add the following to your build.sbt:
 
     buildInfoPackage := "mypackage"
 
-    buildInfoKeys := Seq[Scoped](ClosureKeys.suffix in (Compile, ClosureKeys.closure))
+    buildInfoKeys := Seq[Scoped](JsManifestKeys.suffix in (Compile, JsManifestKeys.closure))
 
     sourceGenerators in Compile <+= buildInfo
 
@@ -125,7 +149,4 @@ Which is called in my template like:
 
 ## Acknowledgements
 
-This plugin is a sbt 0.11.2 port of
-[sbt-closure](https://github.com/davegurnell/sbt-closure)
-
-It was modeled after and heavily influenced by [less-sbt](https://github.com/softprops/less-sbt "less-sbt")
+This plugin has been forked from the [sbt-closure](https://github.com/eltimn/sbt-closure) plugin.
