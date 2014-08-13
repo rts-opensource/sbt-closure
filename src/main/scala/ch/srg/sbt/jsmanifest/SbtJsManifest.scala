@@ -9,8 +9,8 @@ import sbt._
 
 object Import {
   object JsManifestKeys {
-    lazy val jsManifest         = TaskKey[Seq[File]]("jsManifest", "Compiles .jsm javascript manifest files")
-    lazy val charset            = SettingKey[Charset]("charset", "Sets the character encoding used in file IO. Defaults to utf-8")
+    lazy val jsManifest = TaskKey[Seq[File]]("jsManifest", "Compiles .jsm javascript manifest files")
+    lazy val charset    = SettingKey[Charset]("charset", "Sets the character encoding used in file IO. Defaults to utf-8")
   }
 }
 
@@ -22,12 +22,18 @@ object SbtJsManifest extends SbtWebSourceFilePlugin {
 
   val autoImport = Import
 
-  import ch.srg.sbt.jsmanifest.SbtJsManifest.autoImport.JsManifestKeys._
+  import autoImport.JsManifestKeys._
 
   override def projectSettings: Seq[Setting[_]] = Seq(
     charset := Charset.forName("utf-8")
   ) ++ addSourceFileTasks(jsManifest)
 
+  /**
+   * Find all the js mannifest files in source directory and compile them.
+   *
+   * @param config Configuration, can be one of Assets or TestAssets
+   * @return Task definition
+   */
   protected def mainSourceFileTask(config: Configuration): Def.Initialize[Task[Seq[File]]] = Def.task {
     val sourceDir = (sourceDirectory in jsManifest in config).value
     val sources = sourceDir ** ("*.jsm" | "*.jsmanifest")
