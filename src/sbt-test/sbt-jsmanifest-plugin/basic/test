@@ -1,4 +1,4 @@
 # should generate js
 > assets
-$ exists target/web/public/main/js/script.js
+$ exists target/web/public/main/javascript/script.js
 > checkCombined
