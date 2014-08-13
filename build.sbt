@@ -34,8 +34,6 @@ repository in bintray := "sbt-plugins"
 
 bintrayOrganization in bintray := Some("rts")
 
-libraryDependencies += "com.google.javascript" % "closure-compiler" % "r1741"
-
 scriptedSettings
 
 scriptedLaunchOpts <+= version apply { v => s"-Dproject.version=$v" }
