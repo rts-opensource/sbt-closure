@@ -2,6 +2,7 @@ package ch.srg.sbt.jsmanifest
 
 import java.nio.charset.Charset
 
+import ch.srg.sbt.SbtWebSourceFilePlugin
 import com.typesafe.sbt.web._
 import sbt.Keys._
 import sbt._
@@ -13,7 +14,7 @@ object Import {
   }
 }
 
-object SbtJsManifest extends AutoPlugin {
+object SbtJsManifest extends SbtWebSourceFilePlugin {
 
   override def requires = SbtWeb
 
@@ -21,15 +22,13 @@ object SbtJsManifest extends AutoPlugin {
 
   val autoImport = Import
 
-  import com.typesafe.sbt.web.SbtWeb.autoImport._
-  import autoImport.JsManifestKeys._
+  import ch.srg.sbt.jsmanifest.SbtJsManifest.autoImport.JsManifestKeys._
 
   override def projectSettings: Seq[Setting[_]] = Seq(
-    charset := Charset.forName("utf-8"),
-    jsManifest := concatenateFiles(Assets).value
-  )
+    charset := Charset.forName("utf-8")
+  ) ++ addSourceFileTasks(jsManifest)
 
-  def concatenateFiles(config: Configuration): Def.Initialize[Task[Seq[File]]] = Def.task {
+  protected def mainSourceFileTask(config: Configuration): Def.Initialize[Task[Seq[File]]] = Def.task {
     val sourceDir = (sourceDirectory in jsManifest in config).value
     val sources = sourceDir ** ("*.jsm" | "*.jsmanifest")
     val mappings = sources pair relativeTo(sourceDir)
@@ -38,7 +37,9 @@ object SbtJsManifest extends AutoPlugin {
     // Find out which manifest needs to be compiled.
     val manifests = for {
       (manifest, outFile) <- mappings map {
-        case (file, path) => new Manifest(file, downloadDir, (charset in jsManifest).value) -> (resourceManaged in jsManifest in config).value / path.replaceAll("""[.]jsm(anifest)?$""", ".js")
+        case (file, path) =>
+          new Manifest(file, downloadDir, (charset in jsManifest).value) ->
+            (resourceManaged in jsManifest in config).value / path.replaceAll("""[.]jsm(anifest)?$""", ".js")
       }
       if manifest newerThan outFile
     }

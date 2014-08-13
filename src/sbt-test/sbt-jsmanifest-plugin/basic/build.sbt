@@ -1,7 +1,5 @@
 lazy val root = (project in file(".")).enablePlugins(SbtWeb)
 
-sourceGenerators in Assets <+= jsManifest
-
 val checkCombined = taskKey[Unit]("check that manifest is combined")
 
 checkCombined := {
