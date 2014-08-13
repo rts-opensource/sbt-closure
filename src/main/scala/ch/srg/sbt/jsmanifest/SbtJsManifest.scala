@@ -35,38 +35,22 @@ object SbtJsManifest extends SbtWebSourceFilePlugin {
    * @return Task definition
    */
   protected def mainSourceFileTask(config: Configuration): Def.Initialize[Task[Seq[File]]] = Def.task {
+    val logger: Logger = state.value.log
     val sourceDir = (sourceDirectory in jsManifest in config).value
     val sources = sourceDir ** ("*.jsm" | "*.jsmanifest")
-    val mappings = sources pair relativeTo(sourceDir)
     val downloadDir = (streams in config).value.cacheDirectory / "manifest-downloads"
 
-    // Find out which manifest needs to be compiled.
-    val manifests = for {
-      (manifest, outFile) <- mappings map {
-        case (file, path) =>
-          new Manifest(file, downloadDir, (charset in jsManifest).value) ->
-            (resourceManaged in jsManifest in config).value / path.replaceAll("""[.]jsm(anifest)?$""", ".js")
-      }
-      if manifest newerThan outFile
-    }
-    yield { (manifest, outFile) }
+    sources pair relativeTo(sourceDir) map {
+      case (file, path) =>
+        val manifest = new Manifest(file, downloadDir, (charset in jsManifest).value)
+        val outFile = (resourceManaged in jsManifest in config).value / path.replaceAll("""[.]jsm(anifest)?$""", ".js")
 
-    // Compile manifests.
-    manifests match {
-      case Nil =>
-        streams.value.log.debug("No JavaScript manifest files to compile")
-        Nil
-      case tmp =>
-        streams.value.log.info("Compiling %d jsm files." format tmp.size)
+        if (manifest newerThan outFile) {
+          logger.info(s"Compiling javascript manifest: ${file.getAbsolutePath}")
+          manifest.compileTo(outFile)
+        }
 
-        val compiled = for {
-          (manifest, outFile) <- tmp if manifest.compileTo(outFile)
-        } yield outFile
-
-        if (compiled.size < tmp.size)
-          streams.value.log.warn("Failed to compile %d jsm files" format (tmp.size - compiled.size))
-
-        compiled
+        outFile
     }
   }
 }
